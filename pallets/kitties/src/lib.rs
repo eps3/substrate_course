@@ -34,26 +34,33 @@ pub trait Trait: frame_system::Trait {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Kitties {
+	    // kitty_id -> kitty
         pub Kitties get(fn kitties): map hasher(blake2_128_concat) T::KittyIndex => Option<Kitty>;
+        // kitty_id生成器
         pub KittiesCount get(fn kitties_count): T::KittyIndex;
+        // kitty_id -> account_id 用于查找kitty的所有者
         pub KittyOwners get(fn kitty_owner):
             map
                 hasher(blake2_128_concat) T::KittyIndex
                 => Option<T::AccountId>;
+        // account_id, kitty_id -> kitty_id 用于查找用户的所有kitty
         pub OwnerKitties get(fn owner_kitty):
             double_map
                 hasher(blake2_128_concat) T::AccountId,
                 hasher(blake2_128_concat) T::KittyIndex
                 => T::KittyIndex;
+        // kitty_id -> (kitty_id_1, kitty_id_2) 用于查找父母
         pub Parents get(fn kitty_parent):
             map
                 hasher(blake2_128_concat) T::KittyIndex
                 => Option<(T::KittyIndex, T::KittyIndex)>;
+        // kitty_id_1, kitty_id_2 -> kitty_id_2 用于查找所有繁殖过的对象
         pub Lovers get(fn kitty_wife):
             double_map
                 hasher(blake2_128_concat) T::KittyIndex, // self
                 hasher(blake2_128_concat) T::KittyIndex  // wife
                 => T::KittyIndex; // wife
+        // kitty_id_1, kitty_id -> kitty_id1 用于查找所有孩子
         pub Children get(fn children):
             double_map
                 hasher(blake2_128_concat) T::KittyIndex, // self
@@ -186,6 +193,7 @@ impl<T: Trait> Module<T> {
         payload.using_encoded(blake2_128)
     }
 
+    // 获取用户的所有kitties
     #[allow(dead_code)]
     fn get_all_kitties(owner: &T::AccountId) -> sp_std::vec::Vec<T::KittyIndex> {
         let mut v = sp_std::vec::Vec::new();
@@ -195,6 +203,7 @@ impl<T: Trait> Module<T> {
         v
     }
 
+    // 获取所有孩子
     #[allow(dead_code)]
     fn get_all_children(kitty_id: T::KittyIndex) -> sp_std::vec::Vec<T::KittyIndex> {
         let mut v = sp_std::vec::Vec::new();
@@ -204,6 +213,7 @@ impl<T: Trait> Module<T> {
         v
     }
 
+    // 获取父母
     #[allow(dead_code)]
     fn get_parents(kitty_id: T::KittyIndex) -> sp_std::vec::Vec<T::KittyIndex> {
         match Parents::<T>::get(kitty_id) {
@@ -217,6 +227,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // 获取所有兄弟，没有去重，没有移除自己
     #[allow(dead_code)]
     fn get_brothers(kitty_id: T::KittyIndex) -> sp_std::vec::Vec<T::KittyIndex> {
         let parents = Self::get_parents(kitty_id);
