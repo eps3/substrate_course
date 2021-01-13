@@ -80,6 +80,8 @@ decl_event!(
 	}
 );
 
+const RESERVE_AMOUNT: u32 = 1000;
+
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 	    type Error = Error<T>;
@@ -89,7 +91,7 @@ decl_module! {
 		pub fn create(origin) {
             let sender = ensure_signed(origin)?;
             let kitty_id = Self::next_kitty_id()?;
-            ensure!(T::Currency::reserve(&sender, 1000.into()).is_ok(), Error::<T>::BalanceInsufficent);
+            ensure!(T::Currency::reserve(&sender, RESERVE_AMOUNT.into()).is_ok(), Error::<T>::BalanceInsufficent);
             let dna = Self::random_value(&sender);
             let kitty = Kitty(dna);
             Self::insert_kitty(&sender, kitty_id, kitty, One::one(), One::one());
@@ -125,8 +127,8 @@ impl<T: Trait> Module<T> {
             Some(owner) => ensure!(owner == sender.clone(), Error::<T>::NotKittyOwner),
             None => fail!(Error::<T>::KittyIdNotExist)
         }
-        T::Currency::unreserve(&sender, 1000.into());
-        T::Currency::transfer(&sender, &to, 1000.into(), AllowDeath)?;
+        T::Currency::unreserve(&sender, RESERVE_AMOUNT.into());
+        T::Currency::transfer(&sender, &to, RESERVE_AMOUNT.into(), AllowDeath)?;
         <OwnerKitties<T>>::remove(&sender, kitty_id);
         <OwnerKitties<T>>::insert(to.clone(), kitty_id, kitty_id);
         <KittyOwners<T>>::insert(kitty_id, to.clone());
@@ -140,7 +142,7 @@ impl<T: Trait> Module<T> {
         let kitty2 = Self::kitties(kitty_id_2).ok_or(Error::<T>::KittyIdNotExist)?;
 
         let kitty_id = Self::next_kitty_id()?;
-        ensure!(T::Currency::reserve(&sender, 1000.into()).is_ok(), Error::<T>::BalanceInsufficent);
+        ensure!(T::Currency::reserve(&sender, RESERVE_AMOUNT.into()).is_ok(), Error::<T>::BalanceInsufficent);
         let kitty1_dna = kitty1.0;
         let kitty2_dna = kitty2.0;
         let selector = Self::random_value(&sender);
